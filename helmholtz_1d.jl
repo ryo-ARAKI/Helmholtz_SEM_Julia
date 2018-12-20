@@ -230,7 +230,8 @@ using LinearAlgebra
             var.B_global[(e-1)*param.N_x:e*param.N_x, (e-1)*param.N_x:e*param.N_x] += var.B_local[e, 0:param.N_x, 0:param.N_x]
         end
         # Enforce Dirichlet boundary condition
-        var.B_global[0,0:param.N_ele*param.N_x] = zeros(0:param.N_ele*param.N_x)
+        var.B_global[0,0:param.N_ele*param.N_x] = zeros(0:param.N_ele*param.N_x)  # Inlet boundary
+        var.B_global[param.N_ele*param.N_x,0:param.N_ele*param.N_x] = zeros(0:param.N_ele*param.N_x)  # Outlet boundary
     end
 
     """
@@ -241,7 +242,7 @@ using LinearAlgebra
             var.C_global[(e-1)*param.N_x:e*param.N_x, (e-1)*param.N_x:e*param.N_x] += var.C_local[e, 0:param.N_x, 0:param.N_x]
         end
         # Enforce Dirichlet boundary condition
-        var.C_global[0,0:param.N_ele*param.N_x] = zeros(0:param.N_ele*param.N_x) # Inlet boundary
+        var.C_global[0,0:param.N_ele*param.N_x] = zeros(0:param.N_ele*param.N_x)  # Inlet boundary
         var.C_global[param.N_ele*param.N_x,0:param.N_ele*param.N_x] = zeros(0:param.N_ele*param.N_x)  # Outlet boundary
     end
 
@@ -332,27 +333,31 @@ Module for dat, image and movie generation
 module mod_output
     using OffsetArrays
     using Plots
-    gr(
-        # aspect_ratio = 1,
-        # legend = false,
-        # xaxis=nothing,
-        # yaxis=nothing
-    )
+    gr()
     """
     Output snapshot image of particle distribution and direction
     """
     function out_snapimg(param,var)
-        sol_a = OffsetArray{Float64}(undef, 0:param.N_ele*param.N_x)
-        for i=0:param.N_ele*param.N_x
-            sol_a[i] = (sin(π*var.x[i])-cos(π*var.x[i])-1.0)/(sqrt(2)*π^2)
+        l = range(-1,stop=1,length=100)
+        sol = Array{Float64}(undef, length(l))
+        for i=1:length(l)
+            sol[i] = (sin(π*l[i])-cos(π*l[i])-1.0)/(sqrt(2)*π^2)
         end
         plot(
+            l,
+            sol,
+            linewidth=3,
+            seriesalpha=1.0,
+            label="Analytical solution",
+            legend=:bottomright
+            )
+        plot!(
             var.x[0:param.N_ele*param.N_x],
-            [
             var.u[0:param.N_ele*param.N_x],
-            sol_a[0:param.N_ele*param.N_x],
-            ],
-            linewidth = 3
+            linewidth=3,
+            seriesalpha=0.75,
+            label="SEM solution",
+            legend=:bottomright
             )
         str_ele = lpad(string(param.N_ele), 3, "0")
         str_x = lpad(string(param.N_x), 3, "0")

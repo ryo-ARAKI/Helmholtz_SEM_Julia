@@ -299,7 +299,7 @@ using LinearAlgebra
             end
             # Calculate residual
             r[0:n] = var.RHS[0:n] - var.C_global[0:n, 0:n] * y[0:n]
-            er = dot(r[0:n],r[0:n])/(n+1)
+            er = dot(r[0:n],r[0:n])#/(n+1)
             # Cobvergence evaluation
             if er < 10.0^(-10)
                 println("Converged, itr= ", itr, " residual= ", er)
@@ -363,6 +363,19 @@ module mod_output
         str_x = lpad(string(param.N_x), 3, "0")
         png("result/helmholtz_$(str_ele)_$(str_x).png")
     end
+
+    """
+    Calculate L^infty error
+    """
+    function calc_Linftyerror(param,var)
+        tmp_err = OffsetArray{Float64}(undef, 0:param.N_ele*param.N_x)
+        for i=0:param.N_ele*param.N_x
+            tmp_err[i] = abs( var.u[i] - (sin(π*var.x[i])-cos(π*var.x[i])-1.0)/(sqrt(2)*π^2) )
+        end
+        err = maximum(tmp_err[0:param.N_ele*param.N_x]) / (param.N_ele*param.N_x+1)
+        println("N_ele*N_x+1,   L^∞ error  (N_ele=",param.N_ele, ", N_x=",param.N_x,")")
+        println(param.N_ele*param.N_x+1, " ", err)
+    end
 end  # module mod_output
 
 
@@ -382,8 +395,9 @@ set_f_global,
 set_RHS,
 solve_LineraEquation,
 set_global_x
-import .mod_output:  # Define functions for output data
-out_snapimg
+import .mod_output:  # Define functions for data output
+out_snapimg,
+calc_Linftyerror
 
 
 ## Set parameter
@@ -412,7 +426,6 @@ var_ = mod_param_var.Variables(x,C_local,B_local,f_local,C_global,B_global,f_glo
 ## Main
 set_initial_condition(param_,var_)
 set_global_x(param_,var_)
-
 set_B_local(param_,var_)
 set_C_local(param_,var_)
 set_B_global(param_,var_)
@@ -428,3 +441,4 @@ var_.u = solve_LineraEquation(param_,var_)
 # println("RHS=  ",var_.RHS)
 # println("u=  ",var_.u)
 out_snapimg(param_,var_)
+calc_Linftyerror(param_,var_)

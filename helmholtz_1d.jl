@@ -376,6 +376,19 @@ module mod_output
         println("N_ele*N_x+1,   L^∞ error  (N_ele=",param.N_ele, ", N_x=",param.N_x,")")
         println(param.N_ele*param.N_x+1, " ", err)
     end
+
+    """
+    Output dat file
+    """
+    function out_dat(param,var)
+        str_ele = lpad(string(param.N_ele), 3, "0")
+        str_x = lpad(string(param.N_x), 3, "0")
+        io = open("result/helmholtz_$(str_ele)_$(str_x).dat", "w")
+        for i=0:param.N_ele*param.N_x
+            println(io, var.x[i], " ", var.u[i])
+        end
+        close(io)
+    end
 end  # module mod_output
 
 
@@ -397,7 +410,8 @@ solve_LineraEquation,
 set_global_x
 import .mod_output:  # Define functions for data output
 out_snapimg,
-calc_Linftyerror
+calc_Linftyerror,
+out_dat
 
 
 ## Set parameter
@@ -440,5 +454,6 @@ var_.u = solve_LineraEquation(param_,var_)
 # end
 # println("RHS=  ",var_.RHS)
 # println("u=  ",var_.u)
-out_snapimg(param_,var_)
-calc_Linftyerror(param_,var_)
+# out_snapimg(param_,var_)
+# calc_Linftyerror(param_,var_)
+out_dat(param_,var_)

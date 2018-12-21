@@ -337,7 +337,7 @@ module mod_output
     """
     Output snapshot image of particle distribution and direction
     """
-    function out_snapimg(param,var)
+    function out_snapimg_()
         l = range(-1,stop=1,length=100)
         sol = Array{Float64}(undef, length(l))
         for i=1:length(l)
@@ -346,22 +346,43 @@ module mod_output
         plot(
             l,
             sol,
+            xlims = (0,1.0),
             linewidth=3,
             seriesalpha=1.0,
             label="Analytical solution",
             legend=:bottomright
             )
+    end
+
+    """
+    Output snapshot image of particle distribution and direction
+    """
+    function out_snapimg(param,var)
+        l = range(-1,stop=1,length=100)
+        sol = Array{Float64}(undef, length(l))
+        for i=1:length(l)
+            sol[i] = (sin(π*l[i])-cos(π*l[i])-1.0)/(sqrt(2)*π^2)
+        end
+        # plot(
+        #     l,
+        #     sol,
+        #     linewidth=3,
+        #     seriesalpha=1.0,
+        #     label="Analytical solution",
+        #     legend=:bottomright
+        #     )
+        str_ele = lpad(string(param.N_ele), 2, "0")
+        str_x = lpad(string(param.N_x), 2, "0")
         plot!(
             var.x[0:param.N_ele*param.N_x],
             var.u[0:param.N_ele*param.N_x],
             linewidth=3,
             seriesalpha=0.75,
-            label="SEM solution",
+            xlims = (0,1.0),
+            label="SEM solution_N_ele=$(str_ele)_N_x=$(str_x)",
             legend=:bottomright
             )
-        str_ele = lpad(string(param.N_ele), 3, "0")
-        str_x = lpad(string(param.N_x), 3, "0")
-        png("result/helmholtz_$(str_ele)_$(str_x).png")
+        # png("result/helmholtz_$(str_ele)_$(str_x).png")
     end
 
     """
@@ -395,6 +416,8 @@ end  # module mod_output
 ## Declare modules
 using OffsetArrays
 using ProgressMeter
+using Plots
+gr()
 using .mod_param_var  # Define parameters and variables
 import .mod_1d_helmholtz:  # Definde 1-D wave equation
 global_x,
@@ -409,51 +432,60 @@ set_RHS,
 solve_LineraEquation,
 set_global_x
 import .mod_output:  # Define functions for data output
+out_snapimg_,
 out_snapimg,
 calc_Linftyerror,
 out_dat
 
+out_snapimg_()
+for i=3:2:10
+    println(i)
 
-## Set parameter
-N_ele = 2
-N_x = 10
-ν = 0.2
-Δt = 0.005
-λ = 0.0 #sqrt(2.0/(ν*Δt))
-L = 2.0
-Li = L/N_ele
-param_ = mod_param_var.Parameters(N_ele,N_x,ν,Δt,λ,L,Li)
+    ## Set parameter
+    N_ele = 2
+    N_x = i  # Vary modes
+    ν = 0.2
+    Δt = 0.005
+    λ = 0.0 #sqrt(2.0/(ν*Δt))
+    L = 2.0
+    Li = L/N_ele
+    param_ = mod_param_var.Parameters(N_ele,N_x,ν,Δt,λ,L,Li)
 
-## Set variables
-x = OffsetArray{Float64}(undef, 0:param_.N_ele*param_.N_x)
-C_local = OffsetArray{Float64}(undef, 1:param_.N_ele, 0:param_.N_x, 0:param_.N_x)
-B_local = OffsetArray{Float64}(undef, 1:param_.N_ele, 0:param_.N_x, 0:param_.N_x)
-f_local = OffsetArray{Float64}(undef, 1:param_.N_ele, 0:param_.N_x)
-C_global = OffsetArray{Float64}(undef, 0:param_.N_ele*param_.N_x, 0:param_.N_ele*param_.N_x)
-B_global = OffsetArray{Float64}(undef, 0:param_.N_ele*param_.N_x, 0:param_.N_ele*param_.N_x)
-f_global = OffsetArray{Float64}(undef, 0:param_.N_ele*param_.N_x)
-RHS = OffsetArray{Float64}(undef, 0:param_.N_ele*param_.N_x)
-u = OffsetArray{Float64}(undef, 0:param_.N_ele*param_.N_x)
-var_ = mod_param_var.Variables(x,C_local,B_local,f_local,C_global,B_global,f_global,RHS,u)
+    ## Set variables
+    x = OffsetArray{Float64}(undef, 0:param_.N_ele*param_.N_x)
+    C_local = OffsetArray{Float64}(undef, 1:param_.N_ele, 0:param_.N_x, 0:param_.N_x)
+    B_local = OffsetArray{Float64}(undef, 1:param_.N_ele, 0:param_.N_x, 0:param_.N_x)
+    f_local = OffsetArray{Float64}(undef, 1:param_.N_ele, 0:param_.N_x)
+    C_global = OffsetArray{Float64}(undef, 0:param_.N_ele*param_.N_x, 0:param_.N_ele*param_.N_x)
+    B_global = OffsetArray{Float64}(undef, 0:param_.N_ele*param_.N_x, 0:param_.N_ele*param_.N_x)
+    f_global = OffsetArray{Float64}(undef, 0:param_.N_ele*param_.N_x)
+    RHS = OffsetArray{Float64}(undef, 0:param_.N_ele*param_.N_x)
+    u = OffsetArray{Float64}(undef, 0:param_.N_ele*param_.N_x)
+    var_ = mod_param_var.Variables(x,C_local,B_local,f_local,C_global,B_global,f_global,RHS,u)
 
 
-## Main
-set_initial_condition(param_,var_)
-set_global_x(param_,var_)
-set_B_local(param_,var_)
-set_C_local(param_,var_)
-set_B_global(param_,var_)
-set_C_global(param_,var_)
-set_f_local(param_,var_)
-set_f_global(param_,var_)
-set_RHS(param_,var_)
-var_.u = solve_LineraEquation(param_,var_)
-# println("C= ")
-# for i=0:param_.N_ele*param_.N_x
-#     println(var_.C_global[i,0:param_.N_ele*param_.N_x])
-# end
-# println("RHS=  ",var_.RHS)
-# println("u=  ",var_.u)
-# out_snapimg(param_,var_)
-# calc_Linftyerror(param_,var_)
-out_dat(param_,var_)
+    ## Main
+    set_initial_condition(param_,var_)
+    set_global_x(param_,var_)
+    set_B_local(param_,var_)
+    set_C_local(param_,var_)
+    set_B_global(param_,var_)
+    set_C_global(param_,var_)
+    set_f_local(param_,var_)
+    set_f_global(param_,var_)
+    set_RHS(param_,var_)
+    var_.u = solve_LineraEquation(param_,var_)
+    # println("C= ")
+    # for i=0:param_.N_ele*param_.N_x
+    #     println(var_.C_global[i,0:param_.N_ele*param_.N_x])
+    # end
+    # println("RHS=  ",var_.RHS)
+    # println("u=  ",var_.u)
+    # out_snapimg(param_,var_)
+    out_snapimg(param_,var_)
+    # calc_Linftyerror(param_,var_)
+    # out_dat(param_,var_)
+
+end
+
+png("result/helmholtz_modes.png")

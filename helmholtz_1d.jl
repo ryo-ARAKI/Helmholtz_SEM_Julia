@@ -49,6 +49,8 @@ Module for 1-D Helmholtz equation
 module mod_1d_helmholtz
 using OffsetArrays
 using LinearAlgebra
+using Plots
+gr()
     """
     Calculate local coordinate
     Eq. (4a)
@@ -324,6 +326,28 @@ using LinearAlgebra
         end
     end
 
+    """
+    Output Chebyshev polynomial
+    """
+    function out_Chebyshev()
+        l = range(-1,stop=1,length=100)
+        Chev = Array{Float64}(undef, 6, length(l))
+        for k=1:5
+            for i=1:length(l)
+                Chev[k,i] = Tn(k,l[i])
+            end
+            plot!(
+            l,
+            Chev[k,:],
+            linewidth=3,
+            seriesalpha=1.0,
+            label="Order:$k",
+            legend=:bottomright
+            )
+        end
+        png("result/Chebyshev.png")
+    end
+
 end  # module mod_1d_wave
 
 
@@ -407,7 +431,8 @@ set_f_local,
 set_f_global,
 set_RHS,
 solve_LineraEquation,
-set_global_x
+set_global_x,
+out_Chebyshev
 import .mod_output:  # Define functions for data output
 out_snapimg,
 calc_Linftyerror,
@@ -454,6 +479,7 @@ var_.u = solve_LineraEquation(param_,var_)
 # end
 # println("RHS=  ",var_.RHS)
 # println("u=  ",var_.u)
-# out_snapimg(param_,var_)
+out_snapimg(param_,var_)
 # calc_Linftyerror(param_,var_)
 out_dat(param_,var_)
+out_Chebyshev()
